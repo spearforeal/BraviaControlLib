@@ -6,7 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="c7a4b415-8cf9-468b-8909-f50057004acf" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.BraviaControlLib/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.BraviaControlLib/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BraviaControlLib/BraviaControlLib.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/BraviaControlLib/BraviaControlLib.csproj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BraviaControlLib/BraviaDisplay.cs" beforeDir="false" afterPath="$PROJECT_DIR$/BraviaControlLib/BraviaDisplay.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BraviaControlLib/packages.config" beforeDir="false" afterPath="$PROJECT_DIR$/BraviaControlLib/packages.config" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,7 +56,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1737999872454</updated>
-      <workItem from="1737999873845" duration="23677000" />
+      <workItem from="1737999873845" duration="31430000" />
     </task>
     <servers />
   </component>

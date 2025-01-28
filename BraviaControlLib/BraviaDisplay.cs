@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using Crestron.SimplSharp;
-using Crestron.SimplSharp.Net.Http;
-using Independentsoft.Exchange;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Task = System.Threading.Tasks.Task;
 
 namespace BraviaControlLib
 {
@@ -21,10 +22,7 @@ namespace BraviaControlLib
         private const string InputCommandVersion = "1.0";
         private const string GetPowerCommand = "getPowerStatus";
         private const string GetInputCommand = "getPlayingContentInfo";
-        
 
-        
-        
 
         public BraviaDisplay(string ipAddress, string psk)
         {
@@ -41,27 +39,20 @@ namespace BraviaControlLib
         }
 
         //Power Commands
-        public void PowerOn()
+        public async Task SetPowerAsync(bool powerOn)
         {
-            var url = BuildUrl(SystemUrl);
-            var payload = BuildPayload(SetPowerCommand, PowerCommandVersion, new { status = PowerOnConst });
-            if (SendHttpCommand(url, payload))
-                CrestronConsole.PrintLine("Power On command sent successfully to {0}", IpAddress);
+            var payload = BuildPayload(SetPowerCommand, PowerCommandVersion, new { status = powerOn });
+            if (await SendHttpCommand(SystemUrl, payload))
+            {
+                var isPowerOn = await GetPowerAsync();
+            }
         }
 
-        public void PowerOff()
-        {
-            var url = BuildUrl(SystemUrl);
-            var payload = BuildPayload(SetPowerCommand, PowerCommandVersion, new { status = PowerOffConst });
-            if (SendHttpCommand(url, payload))
-                CrestronConsole.PrintLine("Power Off command sent successfully to {0}", IpAddress);
-        }
 
-        public bool GetPower()
+        public async Task<bool> GetPowerAsync()
         {
-            var url = BuildUrl(SystemUrl);
-            var payload = BuildPayload(GetPowerCommand, PowerCommandVersion, new{});
-            var response = SendHttpCommandWithResponse(url, payload);
+            var payload = BuildPayload(GetPowerCommand, PowerCommandVersion, new { });
+            var response = await SendHttpCommandWithResponse(SystemUrl, payload);
             if (!string.IsNullOrEmpty(response))
             {
                 try
@@ -74,7 +65,7 @@ namespace BraviaControlLib
                 }
                 catch (Exception ex)
                 {
-                    CrestronConsole.PrintLine("{0}", ex.Message);
+                    Console.WriteLine("{0}", ex.Message);
                 }
             }
 
@@ -82,11 +73,10 @@ namespace BraviaControlLib
         }
 
         //Input
-        public InputInformation GetInput()
+        public async Task<InputInformation> GetInputAsync()
         {
-            var url = BuildUrl(AvContentUrl);
             var payload = BuildPayload(GetInputCommand, InputCommandVersion, new { });
-            var response = SendHttpCommandWithResponse(url, payload);
+            var response = await SendHttpCommandWithResponse(AvContentUrl, payload);
             if (!string.IsNullOrEmpty(response))
             {
                 try
@@ -99,13 +89,12 @@ namespace BraviaControlLib
                 }
                 catch (Exception ex)
                 {
-                    CrestronConsole.PrintLine("Error parsing input information: {0}", ex.Message);
-
+                    Console.WriteLine("Error parsing input information: {0}", ex.Message);
                 }
             }
-            CrestronConsole.PrintLine("Failed to retrieve input information.");
+
+            Console.WriteLine("Failed to retrieve input information.");
             return null;
-                
         }
 
         private readonly Dictionary<string, string> _inputs = new Dictionary<string, string>
@@ -118,88 +107,94 @@ namespace BraviaControlLib
             { "CEC 2", "extInput:cec?type=player@port=2" }, { "CEC 3", "extInput:cec?type=player@port=3" }
         };
 
-        public void SetInput(string inputName)
+        public async Task SetInputAsync(string inputName)
         {
-            if (!_inputs.ContainsKey(inputName))
+            if (!_inputs.TryGetValue(inputName, out var inputUri))
             {
-                CrestronConsole.PrintLine("Input '{0}' is not valid.", inputName);
+                Console.WriteLine("Input '{0}' is not valid.", inputName);
                 return;
             }
-            var url = BuildUrl(AvContentUrl);
-            var inputUri = _inputs[inputName];
+
             var payload = BuildPayload(SetInputCommand, InputCommandVersion, new { uri = inputUri });
-            if (SendHttpCommand(url, payload))
-                CrestronConsole.PrintLine("Input switched to {0} on {1}", inputName, IpAddress);
-            else
-                CrestronConsole.PrintLine("Failed to switch input to {0} on {1}", inputName, IpAddress);
+            var success = await SendHttpCommand(AvContentUrl, payload);
+            Console.WriteLine(success ? "Input switched to {0} on {1}" : "Failed to switch input to {0} on {1}",
+                inputName, IpAddress);
         }
         //Audio
 
 
         //HTTP
-        private bool SendHttpCommand(string url, string payload)
+        private async Task<HttpWebRequest> CreateRequestAsync(string endpoint, string body)
         {
             try
             {
-                var client = new HttpClient();
-                var request = new HttpClientRequest()
+                var uri = BuildUrl(endpoint);
+                var request = WebRequest.CreateHttp(uri);
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                request.Headers.Add("X-Auth-PSK", Psk);
+                request.ContentLength = body.Length;
+                var bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
+                request.ContentLength = bodyBytes.Length;
+                using (var streamWriter = new StreamWriter(await request.GetRequestStreamAsync()))
                 {
-                    Url = new UrlParser(url),
-                    RequestType = RequestType.Post,
-                    ContentString = payload
-                };
-                //Headers
-                request.Header.AddHeader(new HttpHeader("X-Auth-PSK", Psk));
-                request.Header.ContentType = "application/json";
+                    await streamWriter.WriteAsync(body);
+                }
 
-                //Send
-                var response = client.Dispatch(request);
-
-                //Success?
-                return response.Code == 200;
+                return request;
             }
             catch (Exception ex)
             {
-                CrestronConsole.PrintLine("HTTP Request Error: {0}", ex.Message);
+                Console.WriteLine($"$Error: {ex.Message}");
+                throw;
+            }
+        }
+
+        private async Task<bool> SendHttpCommand(string url, string payload)
+        {
+            try
+            {
+                var request = await CreateRequestAsync(url, payload);
+                using (var response = (HttpWebResponse)await request.GetResponseAsync())
+                {
+                    return response.StatusCode == HttpStatusCode.OK;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("HTTP Request Error: {0}", ex.Message);
                 return false;
             }
-            
         }
 
-
-        private string SendHttpCommandWithResponse(string url, string payload)
+        private async Task<string> SendHttpCommandWithResponse(string url, string payload)
         {
             try
             {
-                var client = new HttpClient();
-                var request = new HttpClientRequest()
+                var request = await CreateRequestAsync(url, payload);
+                using (var response = (HttpWebResponse)await request.GetResponseAsync())
                 {
-                    Url = new UrlParser(url),
-                    RequestType = RequestType.Post,
-                    ContentString = payload
-                };
-                //Headers
-                request.Header.AddHeader(new HttpHeader("X-Auth-PSK", Psk));
-                request.Header.ContentType = "application/json";
-
-                //Send
-                var response = client.Dispatch(request);
-
-                //Success?
-                if (response.Code == 200)
-                {
-                    return response.ContentString;
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        using (var streamReader = new StreamReader(response.GetResponseStream()))
+                        {
+                            return await streamReader.ReadToEndAsync();
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("HTTP Request failed with status code: {0}", response.StatusCode);
+                        return null; // Return null if the status code is not OK
+                    }
                 }
-                CrestronConsole.PrintLine("HTTP Request failed. Code:{0}", response.Code);
-                return null;
             }
             catch (Exception ex)
             {
-                CrestronConsole.PrintLine("HTTP Request Error: {0}", ex.Message);
+                Console.WriteLine("HTTP Request Error: {0}", ex.Message);
                 return null;
             }
-            
         }
+
 
         public abstract class ApiResponse<T>
         {
@@ -211,28 +206,26 @@ namespace BraviaControlLib
                 {
                     return JsonConvert.DeserializeObject<T>(jsonResponse);
                 }
-                
+
                 catch (JsonException ex)
                 {
-                    CrestronConsole.PrintLine("Error parsing JSON: {0}", ex.Message);
+                    Console.WriteLine("Error parsing JSON: {0}", ex.Message);
                     throw;
                 }
-
             }
-
         }
     }
 
     public class VolumeInformation
     {
         [JsonProperty("volume")] public int Volume { get; set; }
-        
+
         [JsonProperty("mute")] public bool Mute { get; set; }
-        
+
         [JsonProperty("minVolume")] public int MinVolume { get; set; }
-        
+
         [JsonProperty("maxVolume")] public int MaxVolume { get; set; }
-        
+
         [JsonProperty("Target")] public string Target { get; set; }
     }
 

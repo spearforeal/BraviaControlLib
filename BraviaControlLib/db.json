@@ -1,0 +1,225 @@
+{
+    "system": {
+      "getCurrentTime": {
+        "id": 1,
+        "result": [
+          {
+            "dateTime": "2025-01-30T17:45:09Z",
+            "timeZoneOffsetMinute": -300,
+            "dstOffsetMinute": 60
+          }
+        ]
+      },
+      "getInterfaceInformation": {
+        "id": 1,
+        "result": [
+          {
+            "modelName": "FW-55BZ35F",
+            "serverName": "",
+            "interfaceVersion": "5.0.1",
+            "productName": "BRAVIA",
+            "productCategory": "TV"
+          }
+        ]
+      },
+      "getLEDIndicatorStatus": {
+        "id": 1,
+        "result": [
+          {
+            "mode": "Demo",
+            "status": "true"
+          }
+        ]
+      },
+      "getNetworkSettings": {
+        "result": [
+          [
+            {
+              "hwAddr": "FF-FF-FF-FF-FF-FF",
+              "netmask": "255.255.255.0",
+              "ipAddrV4": "0.0.0.0",
+              "netif": "eth0",
+              "ipAddrV6": "ffff::ffff:ffff:fffd%7",
+              "dns": [
+                "0.0.0.0",
+                "1.1.1.1"
+              ],
+              "gateway": "0.0.0.0"
+            },
+            {
+              "hwAddr": "00-00-00-00-00-00",
+              "netmask": "255.255.255.0",
+              "ipAddrV4": "0.0.0.1",
+              "netif": "wlan0",
+              "ipAddrV6": "ffff::ffff:ffff:fffd%8",
+              "dns": [
+                "0.0.0.0",
+                "fec0:0:0:ffff::1%1"
+              ],
+              "gateway": "0.0.0.0"
+            }
+          ]
+        ],
+        "id": 1
+      },
+      "getPowerSavingMode": {
+        "result": [
+          {
+            "mode": "high"
+          }
+        ],
+        "id": 1
+      },
+      "getPowerStatus": {
+        "id": 1,
+        "result": [
+          {
+            "status": "active"
+          }
+        ]
+      },
+      "getRemoteDeviceSettings": {
+        "result": [
+          [
+            {
+              "currentValue": "on",
+              "target": "accessPermission"
+            }
+          ]
+        ],
+        "id": 1
+      },
+      "getSystemInformation": {
+        "id": 1,
+        "result": [
+          {
+            "product": "TV",
+            "language": "eng",
+            "model": "XBR-55X900H",
+            "serial": "1234567",
+            "macAddr": "00:11:22:33:44:55",
+            "name": "Living Room TV",
+            "generation": "5.0.1"
+          }
+        ]
+      },
+      "getRemoteControllerInfo": {
+        "id": 1,
+        "result": [
+          {
+            "bundled": 1,
+            "type": "infrared",
+            "model": "RMF-TX500U",
+            "support": [
+              {
+                "name": "VolumeUp",
+                "value": "AAAAAQAAAAEAAAASAw=="
+              },
+              {
+                "name": "VolumeDown",
+                "value": "AAAAAQAAAAEAAAATAw=="
+              },
+              {
+                "name": "Power",
+                "value": "AAAAAQAAAAEAAAAVAw=="
+              }
+            ]
+          }
+        ]
+      },
+      "setLEDIndicatorStatus": {
+        "result": [],
+        "id": 53
+      }
+    },
+    "avContent": {
+      "getContentCount": {
+        "result": [
+          {
+            "count": 4
+          }
+        ],
+        "id": 11
+      },
+      "getContentList": {
+        "result": [
+          [
+            {
+              "uri": "extInput:hdmi?port=1",
+              "title": "HDMI 1",
+              "index": 0
+            },
+            {
+              "uri": "extInput:hdmi?port=2",
+              "title": "HDMI 2",
+              "index": 1
+            },
+            {
+              "uri": "extInput:hdmi?port=3",
+              "title": "HDMI 3/ARC",
+              "index": 2
+            },
+            {
+              "uri": "extInput:hdmi?port=4",
+              "title": "HDMI 4",
+              "index": 3
+            }
+          ]
+        ],
+        "id": 1
+      },
+      "getCurrentExternalInputsStatus": {
+        "result": [
+          [
+            {
+              "icon": "meta:game",
+              "connection": false,
+              "label": "GAME",
+              "title": "Component1",
+              "uri": "extInput:component?port=1",
+              "status": "false"
+            },
+            {
+              "icon": "meta:component",
+              "connection": true,
+              "label": "",
+              "title": "Component2",
+              "uri": "extInput:component?port=2",
+              "status": "false"
+            },
+            {
+              "icon": "meta:hdmi",
+              "connection": true,
+              "label": "",
+              "title": "HDMI1",
+              "uri": "extInput:hdmi?port=1",
+              "status": "true"
+            },
+            {
+              "icon": "meta:recordingdevice",
+              "connection": true,
+              "label": "BDPlayer",
+              "title": "Player1",
+              "uri": "extInputs:cec?type=player&port=1",
+              "status": "false"
+            }
+          ]
+        ],
+        "id": 1
+      },
+      "getPlayingContentInfo": {
+        "result": [
+          {
+            "source": "extInput:hdmi",
+            "title": "HDMI 2",
+            "uri": "extInput:hdmi?port=2"
+          }
+        ],
+        "id": 1
+      },
+      "setPlayContent": {
+        "result": [],
+        "id": 1
+      }
+    }
+}

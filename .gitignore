@@ -1,5 +1,66 @@
+# Ignore build output
 bin/
 obj/
-/packages/
-riderModule.iml
-/_ReSharper.Caches/
+out/
+TestResults/
+
+# Ignore Rider / JetBrains IDE settings
+.idea/
+*.sln.iml
+*.user
+*.suo
+*.sln.docstates
+
+# Ignore VS Code settings
+.vscode/
+.vscode/*
+
+# Ignore .NET dependencies
+*.nuget
+.nuget/
+packages/
+*.dll
+*.pdb
+*.exe
+*.app/
+*.appx/
+*.msix/
+*.msixbundle/
+
+# Ignore logs and temp files
+*.log
+*.tmp
+*.cache
+*.pid
+*.swp
+*.bak
+
+# Ignore JSON configuration overrides
+appsettings.json
+appsettings.*.json
+
+# Ignore Rider and Resharper caches
+.idea/
+*.DotSettings.user
+**/obj/
+**/bin/
+**/Debug/
+**/Release/
+**/TestResults/
+
+# Ignore environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+
+# Ignore MacOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Ignore Windows system files
+Thumbs.db
+ehthumbs.db

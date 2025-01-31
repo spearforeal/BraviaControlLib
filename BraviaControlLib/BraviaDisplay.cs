@@ -26,6 +26,7 @@ namespace BraviaControlLib
 
         public BraviaDisplay(string ipAddress, string psk)
         {
+
             IpAddress = ipAddress;
             Psk = psk;
         }
@@ -239,5 +240,10 @@ namespace BraviaControlLib
         [JsonProperty("active")] public bool Active { get; set; }
         [JsonProperty("uri")] public string Uri { get; set; }
         [JsonProperty("title")] public string Title { get; set; }
+    }
+
+    public enum EnumTesting
+    {
+        Debug = 1
     }
 }

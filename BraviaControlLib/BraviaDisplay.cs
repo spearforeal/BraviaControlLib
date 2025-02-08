@@ -8,16 +8,18 @@ using Task = System.Threading.Tasks.Task;
 
 namespace BraviaControlLib
 {
-    public class BraviaDisplay
+    public partial class BraviaDisplay
     {
+        public bool IsTestMode { get; set; }
         private string IpAddress { get; set; }
+        
         private string Psk { get; set; }
         private const string PowerCommandVersion = "1.0";
         private const string SetPowerCommand = "setPowerStatus";
         private const bool PowerOnConst = true;
         private const bool PowerOffConst = false;
-        private const string SystemUrl = "system";
-        private const string AvContentUrl = "avContent";
+        private const string SystemEndpoint = "system";
+        private const string AvContentEndpoint = "avContent";
         private const string SetInputCommand = "setPlayContent";
         private const string InputCommandVersion = "1.0";
         private const string GetPowerCommand = "getPowerStatus";
@@ -31,36 +33,48 @@ namespace BraviaControlLib
             Psk = psk;
         }
 
-        private string BuildUrl(string endpoint) => $"http://{IpAddress}/sony/{endpoint}";
-
-        private string BuildPayload(string method, string version, object parameters)
+        private string BuildUrl(ApiServicesEnum endpoint)
         {
-            var payload = new { id = 1, method = method, version = version, @params = new[] { parameters } };
+            var url = IsTestMode ? $"http://{IpAddress}/{endpoint}" : $"http://{IpAddress}/sony/{endpoint}";
+            
+            //Console.WriteLine($"[BuildUrl] Generated URL: {url}");
+            return url;
+        }
+
+        private string BuildPayload(int id, string method, string version, object parameters)
+        {
+            var payload = new { id = id, method = method, version = version, @params = new[] { parameters } };
+            var jsonPayload = JsonConvert.SerializeObject(payload);
+            //Console.WriteLine($"[BuildPayload] Payload: {jsonPayload}");
             return JsonConvert.SerializeObject(payload);
         }
 
         //Power Commands
         public async Task SetPowerAsync(bool powerOn)
         {
-            var payload = BuildPayload(SetPowerCommand, PowerCommandVersion, new { status = powerOn });
-            if (await SendHttpCommand(SystemUrl, payload))
+            var cmd = SysCmdDict[SysEnums.SetPowerStatus];
+            
+            
+            if (await SendHttpCommand(cmd[SetPowerStatusId],  ApiServicesEnum.System.ToString(), cmd, "1.0", new {status = powerOn}))
             {
                 var isPowerOn = await GetPowerAsync();
             }
+            Console.WriteLine($"powerOn value: {powerOn}");
         }
 
 
-        public async Task<bool> GetPowerAsync()
+        public async Task<string> GetPowerAsync()
         {
-            var payload = BuildPayload(GetPowerCommand, PowerCommandVersion, new { });
-            var response = await SendHttpCommandWithResponse(SystemUrl, payload);
+            var response = await SendHttpCommandWithResponse(_id["PowerId"],SystemEndpoint, GetPowerCommand, PowerCommandVersion, new{});
             if (!string.IsNullOrEmpty(response))
             {
                 try
                 {
                     var powerStatus = ApiResponse<PowerStatus>.Parse(response);
+                    Console.WriteLine($"Powerstatus response: {powerStatus}");
                     if (powerStatus != null)
                     {
+                        Console.WriteLine($"Powerstate = {powerStatus.Status}");
                         return powerStatus.Status;
                     }
                 }
@@ -70,14 +84,13 @@ namespace BraviaControlLib
                 }
             }
 
-            return false;
+            return null ;
         }
 
         //Input
         public async Task<InputInformation> GetInputAsync()
         {
-            var payload = BuildPayload(GetInputCommand, InputCommandVersion, new { });
-            var response = await SendHttpCommandWithResponse(AvContentUrl, payload);
+            var response = await SendHttpCommandWithResponse(_id["InputId"], AvContentEndpoint, GetInputCommand, InputCommandVersion, new {});
             if (!string.IsNullOrEmpty(response))
             {
                 try
@@ -116,8 +129,7 @@ namespace BraviaControlLib
                 return;
             }
 
-            var payload = BuildPayload(SetInputCommand, InputCommandVersion, new { uri = inputUri });
-            var success = await SendHttpCommand(AvContentUrl, payload);
+            var success = await SendHttpCommand(_id["InputId"], AvContentEndpoint, SetInputCommand, InputCommandVersion, new {uri = inputUri});
             Console.WriteLine(success ? "Input switched to {0} on {1}" : "Failed to switch input to {0} on {1}",
                 inputName, IpAddress);
         }
@@ -125,21 +137,23 @@ namespace BraviaControlLib
 
 
         //HTTP
-        private async Task<HttpWebRequest> CreateRequestAsync(string endpoint, string body)
+        private async Task<HttpWebRequest> CreateRequestAsync(, string endpoint, string method, string version, object parameters)
         {
             try
             {
                 var uri = BuildUrl(endpoint);
+                var payload = BuildPayload(id, method, version, parameters);
+                //Console.WriteLine($"[CreateRequestAsync] Requested URL: {uri}");
+                //Console.WriteLine($"[CreateRequestAsync] Requested Payload: {payload}");
                 var request = WebRequest.CreateHttp(uri);
                 request.Method = "POST";
                 request.ContentType = "application/json";
                 request.Headers.Add("X-Auth-PSK", Psk);
-                request.ContentLength = body.Length;
-                var bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
+                var bodyBytes = System.Text.Encoding.UTF8.GetBytes(payload);
                 request.ContentLength = bodyBytes.Length;
                 using (var streamWriter = new StreamWriter(await request.GetRequestStreamAsync()))
                 {
-                    await streamWriter.WriteAsync(body);
+                    await streamWriter.WriteAsync(payload);
                 }
 
                 return request;
@@ -151,11 +165,11 @@ namespace BraviaControlLib
             }
         }
 
-        private async Task<bool> SendHttpCommand(string url, string payload)
+        private async Task<bool> SendHttpCommand(ApiServicesEnum service,KeyValuePair<int, string> endpoint, string version, object parameters)
         {
             try
             {
-                var request = await CreateRequestAsync(url, payload);
+                var request = await CreateRequestAsync(id, endpoint, method, version, parameters);
                 using (var response = (HttpWebResponse)await request.GetResponseAsync())
                 {
                     return response.StatusCode == HttpStatusCode.OK;
@@ -168,15 +182,16 @@ namespace BraviaControlLib
             }
         }
 
-        private async Task<string> SendHttpCommandWithResponse(string url, string payload)
+        private async Task<string> SendHttpCommandWithResponse( int id, string endpoint, string method, string version, object parameters)
         {
             try
             {
-                var request = await CreateRequestAsync(url, payload);
+                var request = await CreateRequestAsync(id, endpoint, method, version, parameters);
                 using (var response = (HttpWebResponse)await request.GetResponseAsync())
                 {
-                    if (response.StatusCode == HttpStatusCode.OK)
+                    if (response.StatusCode == HttpStatusCode.OK|| response.StatusCode == HttpStatusCode.Accepted)
                     {
+                        Console.WriteLine(response.StatusCode);
                         using (var streamReader = new StreamReader(response.GetResponseStream()))
                         {
                             return await streamReader.ReadToEndAsync();
@@ -232,7 +247,7 @@ namespace BraviaControlLib
 
     public class PowerStatus
     {
-        [JsonProperty("status")] public bool Status { get; set; }
+        [JsonProperty("status")] public string Status { get; set; }
     }
 
     public class InputInformation
@@ -242,8 +257,26 @@ namespace BraviaControlLib
         [JsonProperty("title")] public string Title { get; set; }
     }
 
-    public enum EnumTesting
+    public enum ApiServicesEnum
     {
-        Debug = 1
+        System = 10, 
+        AvContent = 20,
+        Audio = 30
+        
     }
+    public static readonly Dictionary<ApiServicesEnum, string> apiServiceDict =
+        new Dictionary<ApiServicesEnum, string>
+        {
+            { ApiServicesEnum.System, "system" },
+            { ApiServicesEnum.AvContent, "avContent" },
+            { ApiServicesEnum.Audio, "audio" },
+
+        };
+
+
+
+
+
+
+
 }

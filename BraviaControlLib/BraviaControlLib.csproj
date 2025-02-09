@@ -52,6 +52,11 @@
     <ItemGroup>
       <Content Include="db.json" />
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Services\Audio\" />
+      <Folder Include="Services\AvContent\" />
+      <Folder Include="Services\System\" />
+    </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
          Other similar extension points exist, see Microsoft.Common.targets.

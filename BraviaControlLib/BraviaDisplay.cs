@@ -12,38 +12,37 @@ namespace BraviaControlLib
     {
         public bool IsTestMode { get; set; }
         private string IpAddress { get; set; }
-        
+
         private string Psk { get; set; }
-        private const string PowerCommandVersion = "1.0";
-        private const string SetPowerCommand = "setPowerStatus";
-        private const bool PowerOnConst = true;
-        private const bool PowerOffConst = false;
-        private const string SystemEndpoint = "system";
-        private const string AvContentEndpoint = "avContent";
-        private const string SetInputCommand = "setPlayContent";
-        private const string InputCommandVersion = "1.0";
-        private const string GetPowerCommand = "getPowerStatus";
-        private const string GetInputCommand = "getPlayingContentInfo";
 
 
         public BraviaDisplay(string ipAddress, string psk)
         {
-
             IpAddress = ipAddress;
             Psk = psk;
         }
 
-        private string BuildUrl(ApiServicesEnum endpoint)
+        private static readonly Dictionary<ApiServicesEnum, string> apiServiceDict =
+            new Dictionary<ApiServicesEnum, string>
+            {
+                { ApiServicesEnum.System, "system" },
+                { ApiServicesEnum.AvContent, "avContent" },
+                { ApiServicesEnum.Audio, "audio" },
+            };
+
+        private string BuildUrl(ApiServicesEnum service)
         {
-            var url = IsTestMode ? $"http://{IpAddress}/{endpoint}" : $"http://{IpAddress}/sony/{endpoint}";
-            
+            var serviceStr = apiServiceDict[service];
+            var url = IsTestMode ? $"http://{IpAddress}/{serviceStr}" : $"http://{IpAddress}/sony/{serviceStr}";
+
             //Console.WriteLine($"[BuildUrl] Generated URL: {url}");
             return url;
         }
 
-        private string BuildPayload(int id, string method, string version, object parameters)
+        private string BuildPayload(KeyValuePair<int, string> command, string version, object parameters)
         {
-            var payload = new { id = id, method = method, version = version, @params = new[] { parameters } };
+            var payload = new
+                { id = command.Key, method = command.Value, version = version, @params = new[] { parameters } };
             var jsonPayload = JsonConvert.SerializeObject(payload);
             //Console.WriteLine($"[BuildPayload] Payload: {jsonPayload}");
             return JsonConvert.SerializeObject(payload);
@@ -52,20 +51,22 @@ namespace BraviaControlLib
         //Power Commands
         public async Task SetPowerAsync(bool powerOn)
         {
-            var cmd = SysCmdDict[SysEnums.SetPowerStatus];
-            
-            
-            if (await SendHttpCommand(cmd[SetPowerStatusId],  ApiServicesEnum.System.ToString(), cmd, "1.0", new {status = powerOn}))
+            var command = Cmd(SysEnums.SetPowerStatus);
+
+
+            if (await SendHttpCommand(ApiServicesEnum.System, command, "1.0", new { status = powerOn }))
             {
                 var isPowerOn = await GetPowerAsync();
             }
+
             Console.WriteLine($"powerOn value: {powerOn}");
         }
 
 
         public async Task<string> GetPowerAsync()
         {
-            var response = await SendHttpCommandWithResponse(_id["PowerId"],SystemEndpoint, GetPowerCommand, PowerCommandVersion, new{});
+            var command = Cmd(SysEnums.GetPowerStatus);
+            var response = await SendHttpCommandWithResponse(ApiServicesEnum.System, command, "1.0", new { });
             if (!string.IsNullOrEmpty(response))
             {
                 try
@@ -84,13 +85,14 @@ namespace BraviaControlLib
                 }
             }
 
-            return null ;
+            return null;
         }
 
         //Input
         public async Task<InputInformation> GetInputAsync()
         {
-            var response = await SendHttpCommandWithResponse(_id["InputId"], AvContentEndpoint, GetInputCommand, InputCommandVersion, new {});
+            var command = Cmd(AvEnums.GetPlayingContentInfo);
+            var response = await SendHttpCommandWithResponse(ApiServicesEnum.AvContent, command, "1.0", new { });
             if (!string.IsNullOrEmpty(response))
             {
                 try
@@ -121,7 +123,7 @@ namespace BraviaControlLib
             { "CEC 2", "extInput:cec?type=player@port=2" }, { "CEC 3", "extInput:cec?type=player@port=3" }
         };
 
-        public async Task SetInputAsync(string inputName)
+        public async Task SetInputAsync()
         {
             if (!_inputs.TryGetValue(inputName, out var inputUri))
             {
@@ -129,7 +131,8 @@ namespace BraviaControlLib
                 return;
             }
 
-            var success = await SendHttpCommand(_id["InputId"], AvContentEndpoint, SetInputCommand, InputCommandVersion, new {uri = inputUri});
+            var success = await SendHttpCommand(ApiServicesEnum.AvContent, Cmd(AvEnums.SetPlayContent), "1.0",
+                new { uri = inputUri });
             Console.WriteLine(success ? "Input switched to {0} on {1}" : "Failed to switch input to {0} on {1}",
                 inputName, IpAddress);
         }
@@ -137,12 +140,13 @@ namespace BraviaControlLib
 
 
         //HTTP
-        private async Task<HttpWebRequest> CreateRequestAsync(, string endpoint, string method, string version, object parameters)
+        private async Task<HttpWebRequest> CreateRequestAsync(ApiServicesEnum service,
+            KeyValuePair<int, string> command, string version, object parameters)
         {
             try
             {
-                var uri = BuildUrl(endpoint);
-                var payload = BuildPayload(id, method, version, parameters);
+                var uri = BuildUrl(service);
+                var payload = BuildPayload(command, version, parameters);
                 //Console.WriteLine($"[CreateRequestAsync] Requested URL: {uri}");
                 //Console.WriteLine($"[CreateRequestAsync] Requested Payload: {payload}");
                 var request = WebRequest.CreateHttp(uri);
@@ -165,11 +169,12 @@ namespace BraviaControlLib
             }
         }
 
-        private async Task<bool> SendHttpCommand(ApiServicesEnum service,KeyValuePair<int, string> endpoint, string version, object parameters)
+        private async Task<bool> SendHttpCommand(ApiServicesEnum service, KeyValuePair<int, string> command,
+            string version, object parameters)
         {
             try
             {
-                var request = await CreateRequestAsync(id, endpoint, method, version, parameters);
+                var request = await CreateRequestAsync(service, command, version, parameters);
                 using (var response = (HttpWebResponse)await request.GetResponseAsync())
                 {
                     return response.StatusCode == HttpStatusCode.OK;
@@ -182,14 +187,15 @@ namespace BraviaControlLib
             }
         }
 
-        private async Task<string> SendHttpCommandWithResponse( int id, string endpoint, string method, string version, object parameters)
+        private async Task<string> SendHttpCommandWithResponse(ApiServicesEnum service,
+            KeyValuePair<int, string> command, string version, object parameters)
         {
             try
             {
-                var request = await CreateRequestAsync(id, endpoint, method, version, parameters);
+                var request = await CreateRequestAsync(service, command, version, parameters);
                 using (var response = (HttpWebResponse)await request.GetResponseAsync())
                 {
-                    if (response.StatusCode == HttpStatusCode.OK|| response.StatusCode == HttpStatusCode.Accepted)
+                    if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Accepted)
                     {
                         Console.WriteLine(response.StatusCode);
                         using (var streamReader = new StreamReader(response.GetResponseStream()))
@@ -230,6 +236,35 @@ namespace BraviaControlLib
                 }
             }
         }
+
+        public static readonly Dictionary<InputSrcEnums, string> InputSrcDict = new Dictionary<InputSrcEnums, string>
+        {
+            { InputSrcEnums.Hdmi1, Hdmi1Uri },
+            { InputSrcEnums.Hdmi2, Hdmi2Uri },
+            { InputSrcEnums.Hdmi3, Hdmi3Uri },
+            { InputSrcEnums.Hdmi4, Hdmi4Uri },
+            { InputSrcEnums.Component1, Comp1Uri },
+            { InputSrcEnums.Component2, Comp2Uri },
+            { InputSrcEnums.Component3, Comp3Uri },
+            { InputSrcEnums.Component4, Comp4Uri },
+            { InputSrcEnums.Wifi, WifiUri },
+            { InputSrcEnums.Cec1, Cec1Uri },
+            { InputSrcEnums.Cec2, Cec2Uri },
+            { InputSrcEnums.Cec3, Cec3Uri },
+        };
+
+        private const string Hdmi1Uri = "extInput:hdmi?port=1";
+        private const string Hdmi2Uri = "extInput:hdmi?port=2";
+        private const string Hdmi3Uri = "extInput:hdmi?port=3";
+        private const string Hdmi4Uri = "extInput:hdmi?port=4";
+        private const string Comp1Uri = "extInput:component?port1;";
+        private const string Comp2Uri = "extInput:component?port2;";
+    private const string Comp3Uri = "extInput:component?port3;";
+    private const string Comp4Uri = "extInput:component?port4;";
+    private const string WifiUri = "extInput:widi?port=1";
+    private const string Cec1Uri = "extInput:cec?type=player&port=1";
+    private const string Cec2Uri = "extInput:cec?type=player&port=2";
+    private const string Cec3Uri = "extInput:cec?type=player&port=3";
     }
 
     public class VolumeInformation
@@ -259,24 +294,25 @@ namespace BraviaControlLib
 
     public enum ApiServicesEnum
     {
-        System = 10, 
+        System = 10,
         AvContent = 20,
         Audio = 30
-        
     }
-    public static readonly Dictionary<ApiServicesEnum, string> apiServiceDict =
-        new Dictionary<ApiServicesEnum, string>
-        {
-            { ApiServicesEnum.System, "system" },
-            { ApiServicesEnum.AvContent, "avContent" },
-            { ApiServicesEnum.Audio, "audio" },
-
-        };
 
 
-
-
-
-
-
+    public enum InputSrcEnums
+    {
+        Hdmi1,
+        Hdmi2,
+        Hdmi3,
+        Hdmi4,
+        Component1,
+        Component2,
+        Component3,
+        Component4,
+        Wifi,
+        Cec1,
+        Cec2,
+        Cec3
+    }
 }

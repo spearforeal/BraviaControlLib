@@ -27,7 +27,7 @@ namespace BraviaControlLib
             {
                 try
                 {
-                    var powerResponse = JsonConvert.DeserializeObject<PowerStatusResponse>(response);
+                    var powerResponse = ApiResponse<PowerStatus>.Parse(response);
                     if (powerResponse?.Result != null && powerResponse.Result.Length > 0)
                     {
                         Console.WriteLine($"PowerState = {powerResponse.Result[0].Status}");

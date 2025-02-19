@@ -30,35 +30,6 @@ namespace BraviaControlLib
                 { ApiServicesEnum.Audio, "audio" },
             };
 
-        //Power Commands
-
-
-        //Input
-
-
-        // <summary>
-        // Sets the active input.
-        // </summary>
-        // <param name="inputSource">
-        // Valid inputs are:
-        // Hdmi 1
-        // Hdmi 2
-        // Hdmi 3
-        // Hdmi 4
-        // Component 1
-        // Component 2
-        // Component 3
-        // Component 4
-        // Wifi
-        // Cec 1
-        // Cec 2
-        // Cec 3
-        // </param>
-        //Audio
-
-
-        //HTTP
-
 
     }
 

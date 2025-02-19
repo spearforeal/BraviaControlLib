@@ -5,7 +5,7 @@ namespace BraviaControlLib
 {
     public partial class Bravia
     {
-        public async Task<InputInformation> GetInputAsync()
+        public async Task<ApiResponse<InputInformation>> GetInputAsync()
         {
             var command = Cmd(AvEnums.GetPlayingContentInfo);
             var response = await SendHttpCommandWithResponse(ApiServicesEnum.AvContent, command, "1.0", new { });

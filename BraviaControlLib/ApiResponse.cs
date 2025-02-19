@@ -5,23 +5,24 @@ namespace BraviaControlLib
 {
     public partial class Bravia
     {
-        public abstract partial class ApiResponse<T>
+        public  class ApiResponse<T>
         {
-            public T Data { get; set; }
+            [JsonProperty("result")] public T[] Result { get; set; }
+            [JsonProperty("id")] public int Id { get; set; }
 
-            public static T Parse(string jsonResponse)
+            public static ApiResponse<T> Parse(string jsonResponse)
             {
                 try
                 {
-                    return JsonConvert.DeserializeObject<T>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ApiResponse<T>>(jsonResponse);
                 }
-
-                catch (JsonException ex)
+                catch(JsonException ex)
                 {
-                    Console.WriteLine("Error parsing JSON: {0}", ex.Message);
+                    Console.WriteLine("Error parsing JSON {0}", ex.Message);
                     throw;
                 }
             }
+
         }
     }
 }

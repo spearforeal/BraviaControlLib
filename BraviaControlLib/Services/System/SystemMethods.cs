@@ -30,8 +30,8 @@ namespace BraviaControlLib
                     var powerResponse = ApiResponse<PowerStatus>.Parse(response);
                     if (powerResponse?.Result != null && powerResponse.Result.Length > 0)
                     {
-                        Console.WriteLine($"PowerState = {powerResponse.Result[0].Status}");
-                        return powerResponse.Result[0].Status;
+                        Console.WriteLine($"PowerState = {powerResponse.Result[0][0].Status}");
+                        return powerResponse.Result[0][0].Status;
                     }
                 }
                 catch (Exception ex)

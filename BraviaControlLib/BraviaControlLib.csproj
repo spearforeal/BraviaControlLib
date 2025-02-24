@@ -46,12 +46,14 @@
         <Compile Include="Bravia.cs" />
         <Compile Include="Communication\HTTP\HttpMethods.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
+        <Compile Include="Services\Audio\AudioMethods.cs" />
         <Compile Include="Services\Audio\AudioProperties.cs" />
         <Compile Include="Services\AvContent\AvContentMethods.cs" />
         <Compile Include="Services\AvContent\AvContentProperties.cs" />
         <Compile Include="Services\System\SystemMethods.cs" />
         <Compile Include="Services\System\SystemProperties.cs" />
         <Compile Include="Utility\UtilityMethods.cs" />
+        <Compile Include="VolumeInformation.cs" />
     </ItemGroup>
     <ItemGroup>
         <None Include="packages.config"/>

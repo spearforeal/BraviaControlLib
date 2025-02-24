@@ -7,7 +7,7 @@ namespace BraviaControlLib
     {
         public  class ApiResponse<T>
         {
-            [JsonProperty("result")] public T[] Result { get; set; }
+            [JsonProperty("result")] public T[][] Result { get; set; }
             [JsonProperty("id")] public int Id { get; set; }
 
             public static ApiResponse<T> Parse(string jsonResponse)

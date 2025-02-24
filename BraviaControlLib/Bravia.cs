@@ -33,18 +33,6 @@ namespace BraviaControlLib
 
     }
 
-    public class VolumeInformation
-    {
-        [JsonProperty("volume")] public int Volume { get; set; }
-
-        [JsonProperty("mute")] public bool Mute { get; set; }
-
-        [JsonProperty("minVolume")] public int MinVolume { get; set; }
-
-        [JsonProperty("maxVolume")] public int MaxVolume { get; set; }
-
-        [JsonProperty("Target")] public string Target { get; set; }
-    }
 
     public class PowerStatusResponse
     {

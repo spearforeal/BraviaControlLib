@@ -1,8 +1,11 @@
 ﻿
 using System;
+using System.Reflection;
+using System.Security.AccessControl;
 using System.Threading.Tasks;
 using BraviaControlLib;
 using NUnit.Framework;
+using NUnit.Framework.Constraints;
 using NUnit.Framework.Legacy;
 
 namespace BraviaTestSuite
@@ -43,6 +46,25 @@ namespace BraviaTestSuite
         {
             Assert.DoesNotThrowAsync(async () => await _display.SetPowerAsync(true));
             return Task.FromResult(Task.CompletedTask);
+        }
+
+        [Test]
+        public async Task GetVolumeAsync_ReturnsValidVolumeInformation()
+        {
+            var volumeInfo = await _display.GetVolumeAsync();
+            Console.WriteLine($"Volume {volumeInfo?.Volume}, Min: {volumeInfo?.MinVolume}, Max: {volumeInfo.MaxVolume}, Mute: {volumeInfo.Mute}, Target: {volumeInfo.Target}");
+            ClassicAssert.IsNotNull(volumeInfo, "Expected non-null volume information.");
+            Assert.That(volumeInfo.Volume, Is.InRange(volumeInfo.MinVolume, volumeInfo.MaxVolume));
+        }
+
+        [Test]
+        public async Task SetVolumeAsync_ValidValue_SetsVolumeSuccessfully()
+        {
+            string validVolume = "30";
+            await _display.SetVolumeAsync(validVolume);
+            var volumeInfo = await _display.GetVolumeAsync();
+            ClassicAssert.IsNotNull(volumeInfo, "Volume information should not be null.");
+            Assert.That(volumeInfo.Volume, Is.EqualTo(30), "Expected volume to be set to 30.");
         }
 
     }
